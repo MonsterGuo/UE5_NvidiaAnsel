@@ -1,0 +1,26 @@
+{
+	"FileVersion": 3,
+	"Version": 4251,
+	"VersionName": "4251",
+	"FriendlyName": "Nvidia Ansel Photography Plugin",
+	"Description": "Plugin to support Ansel Photography",
+	"Category": "Photography",
+	"CreatedBy": "Epic Games, Inc.",
+	"CreatedByURL": "http://epicgames.com",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"EngineVersion": "5.0.0",
+	"CanContainContent": false,
+	"Installed": true,
+	"Modules": [
+		{
+			"Name": "Ansel",
+			"Type": "Runtime",
+			"LoadingPhase": "PostConfigInit",
+			"PlatformAllowList": [
+				"Win64"
+			]
+		}
+	]
+}
