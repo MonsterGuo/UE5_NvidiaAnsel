@@ -1,6 +1,6 @@
 # UnrealEngine5_NvidiaAnsel
 一个基于Unreal Engine4.27 版本Nvidia Ansel移植而来的版本，提供两个版本，普通版本和自动抓取版本.
-##### 安装方式：将插件包拷贝到：项目包下的Plugins文件夹，如果没有可新建Plugins文件夹
+##### 安装方式：将插件包拷贝到：项目包下的Plugins文件夹，如果没有可新建Plugins文件夹。(只要拷贝Ansel文件夹)
 ## 目前存在的瑕疵：
 于lumen兼容性不好，Ansel中GI滤镜部分不能正常启用。（拥有场景深度相关滤镜不能启用）
 # Ansel_Capture
