@@ -2,6 +2,9 @@
 一个基于Unreal Engine4.27 版本Nvidia Ansel移植而来的版本，提供两个版本，普通版本和自动抓取版本.
 
 修正：安装存在的部分的瑕疵，规范了build.cs文件
+## update
+更新5.2版本，添加更多设置选项：
+![image](https://github.com/MonsterGuo/UE5_NvidiaAnsel/assets/39860733/303d32df-57e9-492a-a3e2-a93c438cc1b6)
 
 # 安装：将插件安装到任意，引擎能识别到插件的位置即可
 
