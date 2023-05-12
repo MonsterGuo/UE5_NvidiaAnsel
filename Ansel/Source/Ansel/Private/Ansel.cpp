@@ -20,7 +20,8 @@
 #include "Application/SlateApplicationBase.h"
 #include "RenderResource.h"
 #include "Interfaces/IPluginManager.h"
-
+#include "RenderUtils.h"
+#include "UnrealClient.h"
 #include <functional>
 
 #include "AnselFunctionLibrary.h"
@@ -112,6 +113,11 @@ public:
 		control_bloomintensity,
 		control_bloomscale,
 		control_scenefringeintensity,
+		control_OLDSettings,
+		control_LumenSettings,
+		control_SkylightSettings,
+		control_AntiAliasing,
+		control_sgQuality,
 		control_COUNT
 	};
 	typedef union {
@@ -140,8 +146,10 @@ private:
 	void SetUpSessionCVars();
 	void DoCustomUIControls(FPostProcessSettings& InOutPPSettings, bool bRebuildControls);
 	void DeclareSlider(int id, FText LocTextLabel, float LowerBound, float UpperBound, float Val);
+	void DeclareBool(int id,FText LocTextLabel,bool Val);
 	bool ProcessUISlider(int id, float& InOutVal);
-
+	void ProcessUIBool(int id,bool& InOutVal);
+	
 	bool CaptureCVar(FString CVarName);
 	void SetCapturedCVarPredicated(const char* CVarName, float valueIfNotReset, std::function<bool(const float, const float)> comparison, bool wantReset, bool useExistingPriority);
 	void SetCapturedCVar(const char* CVarName, float valueIfNotReset, bool wantReset = false, bool useExistingPriority = false);
@@ -185,6 +193,18 @@ private:
 	bool bHighQualityModeDesired = false;
 	bool bHighQualityModeIsSetup = false;
 
+	// 这是新增的部分
+	bool bHighLodDesired = false;
+	bool bHighLodIsSetup = false;
+	bool bHighLumenDesired = false;
+	bool bHighLumenIsSetup = false;
+	bool bHighSkyLightDesired = false;
+	bool bHighSkyLightIsSetup = false;
+	bool bHighAntiAliasingDesired = false;
+	bool bHighAntiAliasingIsSetup = false;
+	bool bHighSgQualityDesired = false;
+	bool bHighSgQualityIsSetup = false;
+	
 	ansel::FovType RequiredFovType = ansel::kHorizontalFov;
 	ansel::FovType CurrentlyConfiguredFovType = ansel::kHorizontalFov;
 
@@ -371,6 +391,20 @@ void FNVAnselCameraPhotographyPrivate::DeclareSlider(int id, FText LocTextLabel,
 	ansel::UserControlStatus status = ansel::addUserControl(UIControls[id]);
 	UE_LOG(LogAnsel, Log, TEXT("control#%d status=%d"), (int)id, (int)status);
 }
+//声明bool值
+void FNVAnselCameraPhotographyPrivate::DeclareBool(int id,FText LocTextLabel,bool Val)
+{
+	UIControls[id].labelUtf8 = TCHAR_TO_UTF8(LocTextLabel.ToString().GetCharArray().GetData());
+	UIControlValues[id].bool_val = Val;
+	UIControls[id].callback = [](const ansel::UserControlInfo& info)
+	{
+		UIControlValues[info.userControlId - 1].bool_val = *(bool*)info.value;
+	};
+	UIControls[id].info.userControlId = id+1;
+	UIControls[id].info.userControlType = ansel::kUserControlBoolean;
+	UIControls[id].info.value = &UIControlValues[id].bool_val;
+	ansel::UserControlStatus status = ansel::addUserControl(UIControls[id]);
+}
 
 bool FNVAnselCameraPhotographyPrivate::ProcessUISlider(int id, float& InOutVal)
 {
@@ -381,6 +415,15 @@ bool FNVAnselCameraPhotographyPrivate::ProcessUISlider(int id, float& InOutVal)
 
 	InOutVal = FMath::Lerp(UIControlRangeLower[id], UIControlRangeUpper[id], UIControlValues[id].float_val);
 	return true;
+}
+
+void FNVAnselCameraPhotographyPrivate::ProcessUIBool(int id, bool& InOutVal)
+{
+	if (UIControls[id].info.userControlId <= 0)
+	{
+		InOutVal = false; // control is not in use
+	}
+	InOutVal = UIControlValues[id].bool_val;
 }
 
 void FNVAnselCameraPhotographyPrivate::DoCustomUIControls(FPostProcessSettings& InOutPPSettings, bool bRebuildControls)
@@ -396,7 +439,12 @@ void FNVAnselCameraPhotographyPrivate::DoCustomUIControls(FPostProcessSettings& 
 				UIControls[i].info.userControlId = 0;
 			}
 		}
-
+		
+		DeclareBool(control_OLDSettings,LOCTEXT("LOD_Settings","LOD High"),false);
+		DeclareBool(control_LumenSettings,LOCTEXT("Lumen_Settings","Lumen High"),false);
+		DeclareBool(control_SkylightSettings,LOCTEXT("Skylight_Settings","Skylight High"),false);
+		DeclareBool(control_AntiAliasing,LOCTEXT("AntiAliasing_Settings","AntiAliasing High"),false);
+		DeclareBool(control_sgQuality,LOCTEXT("sgQuality_Settings","SQ_Quality High"),false);
 		// save postproc settings at session start
 		UEPostProcessingOriginal = InOutPPSettings;
 
@@ -513,6 +561,13 @@ void FNVAnselCameraPhotographyPrivate::DoCustomUIControls(FPostProcessSettings& 
 	{
 		InOutPPSettings.bOverride_SceneFringeIntensity = 1;
 	}
+
+	// 这里已经将值传输到对应位置了
+	ProcessUIBool(control_OLDSettings,bHighLodDesired);
+	ProcessUIBool(control_LumenSettings,bHighLumenDesired);
+	ProcessUIBool(control_SkylightSettings,bHighSkyLightDesired);
+	ProcessUIBool(control_AntiAliasing,bHighAntiAliasingDesired);
+	ProcessUIBool(control_sgQuality,bHighSgQualityDesired);
 }
 
 bool FNVAnselCameraPhotographyPrivate::UpdateCamera(FMinimalViewInfo& InOutPOV, APlayerCameraManager* PCMgr)
@@ -540,7 +595,7 @@ bool FNVAnselCameraPhotographyPrivate::UpdateCamera(FMinimalViewInfo& InOutPOV, 
 		// 1. detect world-to-meters scale
 		if (const UWorld* World = GEngine->GetWorld())
 		{
-			const AWorldSettings* WorldSettings = GEngine->GetWorld()->GetWorldSettings();
+			const AWorldSettings* WorldSettings = World->GetWorldSettings();
 			if (WorldSettings && WorldSettings->WorldToMeters != 0.f)
 			{
 				RequiredWorldToMeters = WorldSettings->WorldToMeters;
@@ -771,7 +826,7 @@ void FNVAnselCameraPhotographyPrivate::SetCapturedCVarPredicated(const char* CVa
 				info->cvar->Set(wantReset ? info->fInitialVal : valueIfNotReset);
 		}
 	}
-	if (!(info && info->cvar)) UE_LOG(LogAnsel, Log, TEXT("CVar used by Ansel not found: %s"), CVarName);
+	if (!(info && info->cvar)) UE_LOG(LogAnsel, Log, TEXT("CVar used by Ansel not found: %hs"), CVarName);
 }
 
 void FNVAnselCameraPhotographyPrivate::SetCapturedCVar(const char* CVarName, float valueIfNotReset, bool wantReset, bool useExistingPriority)
@@ -781,6 +836,7 @@ void FNVAnselCameraPhotographyPrivate::SetCapturedCVar(const char* CVarName, flo
 		wantReset, useExistingPriority);
 }
 
+//渲染配置
 void FNVAnselCameraPhotographyPrivate::ConfigureRenderingSettingsForPhotography(FPostProcessSettings& InOutPostProcessingSettings)
 {
 #define QUALITY_CVAR(NAME,BOOSTVAL) SetCapturedCVar(NAME, BOOSTVAL, !bHighQualityModeDesired, true)
@@ -788,109 +844,167 @@ void FNVAnselCameraPhotographyPrivate::ConfigureRenderingSettingsForPhotography(
 #define QUALITY_CVAR_AT_MOST(NAME,BOOSTVAL) SetCapturedCVarPredicated(NAME, BOOSTVAL, std::less<float>(), !bHighQualityModeDesired, true)
 #define QUALITY_CVAR_LOWPRIORITY_AT_LEAST(NAME,BOOSTVAL) SetCapturedCVarPredicated(NAME, BOOSTVAL, std::greater<float>(), !bHighQualityModeDesired, false)
 
+#define LOD_CVAR(NAME,BOOSTVAL)	SetCapturedCVar(NAME, BOOSTVAL, !bHighLodDesired, true)
+#define LUMEN_CVAR(NAME,BOOSTVAL) SetCapturedCVar(NAME, BOOSTVAL, !bHighLumenDesired, true)
+#define SKYLIGHT_CVAR(NAME,BOOSTVAL) SetCapturedCVar(NAME, BOOSTVAL, !bHighSkyLightDesired, true)
+#define SQQUALITY_CVAR(NAME,BOOSTVAL) SetCapturedCVar(NAME, BOOSTVAL, !bHighSgQualityDesired, true)
+#define ANTIALIASING_CVAR(NAME,BOOSTVAL) SetCapturedCVar(NAME, BOOSTVAL, !bHighAntiAliasingDesired, true)
+	// LOD Settings
+	if(bHighLodIsSetup!=bHighLodDesired)
+	{
+		
+		LOD_CVAR("r.TextureStreaming",0); 
+		LOD_CVAR("r.ForceLOD",0);			
+		LOD_CVAR("r.particlelodbias", -10);	
+		LOD_CVAR("foliage.DitheredLOD", 0);	
+		LOD_CVAR("foliage.ForceLOD", 0);
+		LOD_CVAR("Foliage.MinimumScreenSize", 0.00000001);
+		//LOD_CVAR("r.HLOD", 0);
+		bHighLodIsSetup = bHighLodDesired;
+#undef LOD_CVAR
+
+	}
+	//lumen设定
+	if(bHighLumenIsSetup!=bHighLumenDesired)
+	{
+		LUMEN_CVAR("r.DistanceFields.MaxPerMeshResolution",256);
+		LUMEN_CVAR("r.Lumen.ScreenProbeGather.ScreenSpaceBentNormal.ApplyDuringIntegration",0);
+		LUMEN_CVAR("r.LumenScene.DirectLighting.OffscreenShadowing.TraceMeshSDFs",0);
+		LUMEN_CVAR("r.Lumen.HardwareRayTracing",1);
+		LUMEN_CVAR("r.Lumen.TranslucencyVolume.TraceFromVolume",0);
+		LUMEN_CVAR("r.Lumen.Reflections.RadianceCache",1);
+		LUMEN_CVAR("r.LumenScene.Radiosity.ProbeSpacing",8);
+		LUMEN_CVAR("r.LumenScene.Radiosity.ProbeOcclusion",0);
+		LUMEN_CVAR("r.LumenScene.FarField",1);
+		LUMEN_CVAR("r.LumenScene.FarField.MaxTraceDistance",1000000);
+		LUMEN_CVAR("r.Lumen.HardwareRayTracing.MaxIterations",128);
+		//lumen最终的捕获质量
+		//InOutPostProcessingSettings.bOverride_LumenFinalGatherQuality =1;
+		//InOutPostProcessingSettings.LumenFinalGatherQuality = 8;
+		//场景的更新速度
+		//InOutPostProcessingSettings.bOverride_LumenSceneLightingUpdateSpeed =1;
+		//InOutPostProcessingSettings.LumenSceneLightingUpdateSpeed = 4;
+		//灯光的更新速度
+		//InOutPostProcessingSettings.bOverride_LumenFinalGatherLightingUpdateSpeed =1;
+		//InOutPostProcessingSettings.LumenFinalGatherLightingUpdateSpeed =4;
+		bHighLumenIsSetup = bHighLumenDesired;
+#undef LUMEN_CVAR
+	}
+	// 天光设定
+	if(bHighSkyLightIsSetup!=bHighSkyLightDesired)
+	{
+		SKYLIGHT_CVAR("r.SkyLight.RealTimeReflectionCapture.TimeSlice",0);	
+		SKYLIGHT_CVAR("r.VolumetricRenderTarget",0);
+		bHighSkyLightIsSetup = bHighSkyLightDesired;
+#undef SKYLIGHT_CVAR
+	}
+	// 质量设定
+	if(bHighSgQualityIsSetup!=bHighSgQualityDesired)
+	{
+		SQQUALITY_CVAR("sg.ViewDistanceQuality", 4);
+		SQQUALITY_CVAR("sg.AntiAliasingQuality", 4);
+		SQQUALITY_CVAR("sg.ShadowQuality", 4);
+		SQQUALITY_CVAR("sg.PostProcessQuality", 4);
+		SQQUALITY_CVAR("sg.TextureQuality", 4);
+		SQQUALITY_CVAR("sg.FoliageQuality", 4);
+		SQQUALITY_CVAR("sg.ShadingQuality", 4);
+		bHighSgQualityIsSetup = bHighSgQualityDesired;
+#undef SQQUALITY_CVAR
+	}
+	// ~sg.AntiAliasingQuality @ cine 
+	if(bHighAntiAliasingIsSetup!=bHighAntiAliasingDesired)
+	{
+		//抗锯齿选项
+		UE_LOG(LogAnsel, Log, TEXT("AntiAliasing is high quality:True"));
+		ANTIALIASING_CVAR("r.AntiAliasingMethod", 2); //这里是抗锯齿方式这里是超分辨率 原为TAA：2	
+		ANTIALIASING_CVAR("r.TemporalAASamples",64);										
+		ANTIALIASING_CVAR("r.TemporalAAFilterSize",1);		
+		ANTIALIASING_CVAR("r.TemporalAA.Quality",2);									
+		//QUALITY_CVAR_AT_LEAST("r.ngx.dlss.quality", 2); // high-quality mode for DLSS if in use //NOT
+		bHighAntiAliasingIsSetup = bHighAntiAliasingDesired;
+#undef ANTIALIASING_CVAR
+	}
+	
 	if (CVarAllowHighQuality.GetValueOnAnyThread()
 		&& bHighQualityModeIsSetup != bHighQualityModeDesired
 		&& (bPausedInternally || !bAutoPause) // <- don't start overriding vars until truly paused
 		)
 	{
 		// Pump up (or reset) the quality. 
-
+		UE_LOG(LogAnsel, Log, TEXT("Photography is high quality:True"));
 		// bring rendering up to (at least) 100% resolution, but won't override manually set value on console
-		QUALITY_CVAR_LOWPRIORITY_AT_LEAST("r.ScreenPercentage", 100);
+		QUALITY_CVAR_LOWPRIORITY_AT_LEAST("r.ScreenPercentage", 100); //OK
 
 		// most of these are similar to typical cinematic sg.* scalability settings, toned down a little for performance
 
-		// can be a mild help with reflections quality
-		QUALITY_CVAR("r.gbufferformat", 5); // 5 = highest precision
 
-		// bias various geometry LODs
-		QUALITY_CVAR_AT_MOST("r.staticmeshloddistancescale", 0.25f); // large quality bias
-		QUALITY_CVAR_AT_MOST("r.landscapelodbias", -2);
-		QUALITY_CVAR_AT_MOST("r.skeletalmeshlodbias", -4); // big bias here since when paused this never gets re-evaluated and the camera could roam to look at a skeletal mesh far away
-
-		// ~sg.AntiAliasingQuality @ cine
-		QUALITY_CVAR("r.postprocessaaquality", 6); // 6 == max
-		QUALITY_CVAR_AT_LEAST("r.defaultfeature.antialiasing", 2); // TAA or higher
-		QUALITY_CVAR_AT_LEAST("r.ngx.dlss.quality", 2); // high-quality mode for DLSS if in use
-
-		// ~sg.EffectsQuality @ cinematic
-		QUALITY_CVAR_AT_LEAST("r.TranslucencyLightingVolumeDim", 64);
-		QUALITY_CVAR("r.RefractionQuality", 2);
-		QUALITY_CVAR("r.SSR.Quality", 4);
-		// QUALITY_CVAR("r.SceneColorFormat", 4); // no - don't really want to mess with this
-		QUALITY_CVAR("r.TranslucencyVolumeBlur", 1);
-		QUALITY_CVAR("r.MaterialQualityLevel", 1); // 0==low, -> 1==high <- , 2==medium
-		QUALITY_CVAR("r.SSS.Scale", 1);
-		QUALITY_CVAR("r.SSS.SampleSet", 2);
-		QUALITY_CVAR("r.SSS.Quality", 1);
-		QUALITY_CVAR("r.SSS.HalfRes", 0);
-		//QUALITY_CVAR_AT_LEAST("r.EmitterSpawnRateScale", 1.f); // no - not sure this has a point when game is paused
-		QUALITY_CVAR("r.ParticleLightQuality", 2);
-		QUALITY_CVAR("r.DetailMode", 2);
-
-		// ~sg.PostProcessQuality @ cinematic
-		QUALITY_CVAR("r.AmbientOcclusionMipLevelFactor", 0.4f);
-		QUALITY_CVAR("r.AmbientOcclusionMaxQuality", 100);
-		QUALITY_CVAR("r.AmbientOcclusionLevels", -1);
-		QUALITY_CVAR("r.AmbientOcclusionRadiusScale", 1.f);
-		QUALITY_CVAR("r.DepthOfFieldQuality", 4);
-		QUALITY_CVAR_AT_LEAST("r.RenderTargetPoolMin", 500); // ?
-		QUALITY_CVAR("r.LensFlareQuality", 3);
-		QUALITY_CVAR("r.SceneColorFringeQuality", 1);
-		QUALITY_CVAR("r.BloomQuality", 5);
-		QUALITY_CVAR("r.FastBlurThreshold", 100);
-		QUALITY_CVAR("r.Upscale.Quality", 3);
-		QUALITY_CVAR("r.Tonemapper.GrainQuantization", 1);
-		QUALITY_CVAR("r.LightShaftQuality", 1);
-		QUALITY_CVAR("r.Filter.SizeScale", 1);
-		QUALITY_CVAR("r.Tonemapper.Quality", 5);
-		QUALITY_CVAR("r.DOF.Gather.AccumulatorQuality", 1);
-		QUALITY_CVAR("r.DOF.Gather.PostfilterMethod", 1);
-		QUALITY_CVAR("r.DOF.Gather.EnableBokehSettings", 1);
-		QUALITY_CVAR_AT_LEAST("r.DOF.Gather.RingCount", 5);
-		QUALITY_CVAR("r.DOF.Scatter.ForegroundCompositing", 1);
-		QUALITY_CVAR("r.DOF.Scatter.BackgroundCompositing", 2);
-		QUALITY_CVAR("r.DOF.Scatter.EnableBokehSettings", 1);
-		QUALITY_CVAR("r.DOF.Scatter.MaxSpriteRatio", 0.1f);
-		QUALITY_CVAR("r.DOF.Recombine.Quality", 2);
-		QUALITY_CVAR("r.DOF.Recombine.EnableBokehSettings", 1);
-		QUALITY_CVAR("r.DOF.TemporalAAQuality", 1);
-		QUALITY_CVAR("r.DOF.Kernel.MaxForegroundRadius", 0.025f);
-		QUALITY_CVAR("r.DOF.Kernel.MaxBackgroundRadius", 0.025f);
-
-		// ~sg.TextureQuality @ cinematic
-		QUALITY_CVAR("r.Streaming.MipBias", 0);
-		QUALITY_CVAR_AT_LEAST("r.MaxAnisotropy", 16);
-		QUALITY_CVAR("r.Streaming.MaxEffectiveScreenSize", 0);
-		// intentionally don't mess with streaming pool size, see 'CVarExtreme' section below
-
-		// ~sg.FoliageQuality @ cinematic
-		QUALITY_CVAR_AT_LEAST("foliage.DensityScale", 1.f);
-		QUALITY_CVAR_AT_LEAST("grass.DensityScale", 1.f);
+		// bias various geometry LODs 
+		QUALITY_CVAR_AT_MOST("r.StaticMeshLODDistanceScale", 0.25f); // large quality bias //OK
+		QUALITY_CVAR_AT_MOST("r.skeletalmeshlodbias", -10); // big bias here since when paused this never gets re-evaluated and the camera could roam to look at a skeletal mesh far away
+		
+		// 其他设定
+		QUALITY_CVAR("r.D3D12.GPUTimeout", 0); 
+		QUALITY_CVAR("a.URO.Enable", 0);
+		
+		
+		
+		// ~sg.FoliageQuality @ cinematic 
+		QUALITY_CVAR_AT_LEAST("foliage.DensityScale", 1.f);		//OK
+		QUALITY_CVAR_AT_LEAST("grass.DensityScale", 1.f);		//OK
 		// boosted foliage LOD (use distance scale not lod bias - latter is buggy)
-		QUALITY_CVAR_AT_LEAST("foliage.LODDistanceScale", 4.f);
-
+		QUALITY_CVAR_AT_LEAST("foliage.LODDistanceScale", 4.f);	//OK
+		// ~sg.EffectsQuality @ cinematic
+		QUALITY_CVAR_AT_LEAST("r.TranslucencyLightingVolumeDim", 64);							
+		QUALITY_CVAR("r.RefractionQuality", 2);													
+		QUALITY_CVAR("r.SSR.Quality", 4);														
+		// QUALITY_CVAR("r.SceneColorFormat", 4); // no - don't really want to mess with this
+		QUALITY_CVAR("r.TranslucencyVolumeBlur", 1);											
+		
+		QUALITY_CVAR("r.MaterialQualityLevel", 1); // 0==low, -> 1==high <- , 2==medium			
+		QUALITY_CVAR("r.SSS.Scale", 1);
+		QUALITY_CVAR("r.SSS.SampleSet", 2);	
+		QUALITY_CVAR("r.SSS.Quality", 1);		
+		QUALITY_CVAR("r.SSS.HalfRes", 0);		
+		//QUALITY_CVAR_AT_LEAST("r.EmitterSpawnRateScale", 1.f); // no - not sure this has a point when game is paused
+		QUALITY_CVAR("r.ParticleLightQuality", 2); //OK
+		QUALITY_CVAR("r.DetailMode", 2);
+		
+		
+		
+		
+		// ~sg.TextureQuality @ cinematic
+		QUALITY_CVAR("r.Streaming.MipBias", 0);					//OK
+		QUALITY_CVAR_AT_LEAST("r.MaxAnisotropy", 16);			//OK
+		QUALITY_CVAR("r.Streaming.MaxEffectiveScreenSize", 0);	//OK
+		// intentionally don't mess with streaming pool size, see 'CVarExtreme' section below
+		
+		
+		
 		// ~sg.ViewDistanceQuality @ cine but only mild draw distance boost
-		QUALITY_CVAR_AT_LEAST("r.viewdistancescale", 2.0f); // or even more...?
+		QUALITY_CVAR_AT_LEAST("r.ViewDistanceScale", 50.0f);	//OK
 
 		// ~sg.ShadowQuality @ cinematic
-		QUALITY_CVAR_AT_LEAST("r.LightFunctionQuality", 2);
-		QUALITY_CVAR("r.ShadowQuality", 5);
-		QUALITY_CVAR_AT_LEAST("r.Shadow.CSM.MaxCascades", 10);
-		QUALITY_CVAR_AT_LEAST("r.Shadow.MaxResolution", 4096);
-		QUALITY_CVAR_AT_LEAST("r.Shadow.MaxCSMResolution", 4096);
-		QUALITY_CVAR_AT_MOST("r.Shadow.RadiusThreshold", 0.f);
-		QUALITY_CVAR("r.Shadow.DistanceScale", 1.f);
-		QUALITY_CVAR("r.Shadow.CSM.TransitionScale", 1.f);
-		QUALITY_CVAR("r.Shadow.PreShadowResolutionFactor", 1.f);
-		QUALITY_CVAR("r.AOQuality", 2);
-		QUALITY_CVAR("r.VolumetricFog", 1);
-		QUALITY_CVAR("r.VolumetricFog.GridPixelSize", 4);
-		QUALITY_CVAR("r.VolumetricFog.GridSizeZ", 128);
-		QUALITY_CVAR_AT_LEAST("r.VolumetricFog.HistoryMissSupersampleCount", 16);
-		QUALITY_CVAR_AT_LEAST("r.LightMaxDrawDistanceScale", 4.f);
+		QUALITY_CVAR_AT_LEAST("r.LightFunctionQuality", 2);		//OK
+		QUALITY_CVAR("r.ShadowQuality", 5);						//OK
+		QUALITY_CVAR_AT_LEAST("r.Shadow.CSM.MaxCascades", 10);	//OK
+		QUALITY_CVAR_AT_LEAST("r.Shadow.MaxResolution", 4096);	//ok
+		QUALITY_CVAR_AT_LEAST("r.Shadow.MaxCSMResolution", 4096);	//ok
+		QUALITY_CVAR_AT_MOST("r.Shadow.RadiusThreshold", 0.001f);		//更改	
+		QUALITY_CVAR("r.Shadow.DistanceScale", 10.f);					//更改
+		QUALITY_CVAR("r.Shadow.CSM.TransitionScale", 1.f);		//ok
+		QUALITY_CVAR("r.Shadow.PreShadowResolutionFactor", 1.f);	//ok
+		QUALITY_CVAR("r.AOQuality", 2);		//ok
+		QUALITY_CVAR("r.VolumetricFog", 1);	//ok
+		QUALITY_CVAR("r.VolumetricFog.GridPixelSize", 4);	//ok
+		QUALITY_CVAR("r.VolumetricFog.GridSizeZ", 128);		//ok
+		QUALITY_CVAR_AT_LEAST("r.VolumetricFog.HistoryMissSupersampleCount", 16);	//ok
+		QUALITY_CVAR_AT_LEAST("r.LightMaxDrawDistanceScale", 4.f);	//ok
 
+		
+		
+		
 		// pump up the quality of raytracing features, though we won't necessarily turn them on if the game doesn't already have them enabled
+		// 这里是当光追开启才特有的
 		if (bRayTracingEnabled)
 		{
 			QUALITY_CVAR_AT_LEAST("D3D12.PSO.StallTimeoutInMs", 8000.0f); // the high-quality RTPSOs may have to be built from scratch the first time; temporarily raise this limit in the hope of avoiding the rare barf-outs.
@@ -937,22 +1051,21 @@ void FNVAnselCameraPhotographyPrivate::ConfigureRenderingSettingsForPhotography(
 		if (CVarExtreme->GetInt())
 		{
 			// great idea but not until I've proven that this isn't deadly or extremely slow on lower-spec machines:
-
 			QUALITY_CVAR("r.Streaming.LimitPoolSizeToVRAM", 0); // 0 is aggressive but is it safe? seems safe.
 			QUALITY_CVAR_AT_LEAST("r.Streaming.PoolSize", 3000); // cine - perhaps redundant when r.streaming.fullyloadusedtextures
-
+			
 			QUALITY_CVAR("r.streaming.hlodstrategy", 2); // probably use 0 if using r.streaming.fullyloadusedtextures, else 2
 			//QUALITY_CVAR("r.streaming.fullyloadusedtextures", 1); // no - LODs oscillate when overcommitted
 			QUALITY_CVAR_AT_LEAST("r.viewdistancescale", 10.f); // cinematic - extreme
-
+			
 			if (bRayTracingEnabled)
 			{
 				// higher-IQ thresholds
 				QUALITY_CVAR_AT_LEAST("r.RayTracing.Translucency.MaxRoughness", 1.f); // speed hit
 				QUALITY_CVAR_AT_LEAST("r.RayTracing.Reflections.MaxRoughness", 1.f); // speed hit
-
+			
 				//QUALITY_CVAR("r.ambientocclusionstaticfraction", 0.f); // trust RT AO/GI...? - needs more testing, doesn't seem a big win
-
+			
 				/*** EXTREME-QUALITY MODE FORCES GI ON ***/
 				// first, some IQ:speed tweaks to make GI speed practical
 				QUALITY_CVAR("r.raytracing.GlobalIllumination.rendertilesize", 128); // somewhat protect against long frames (from pumped-up quality) causing a device-disconnect
@@ -964,16 +1077,16 @@ void FNVAnselCameraPhotographyPrivate::ConfigureRenderingSettingsForPhotography(
 				//QUALITY_CVAR_AT_LEAST("r.RayTracing.GlobalIllumination.MaxBounces", 3); // 2+ is sometimes slightly noticable, sloww
 				////QUALITY_CVAR("r.RayTracing.GlobalIllumination.EvalSkyLight", 1); // EXPERIMENTAL
 				QUALITY_CVAR("r.RayTracing.GlobalIllumination", 1); // FORCE ON: should be fast enough to not TDR(!) with screenpercentage=50... usually a fair IQ win with random content... hidden behind 'EXTREME' mode until I've exercised it more.
-
+			
 				// just not hugely tested:
 				QUALITY_CVAR_AT_LEAST("r.RayTracing.StochasticRectLight.SamplesPerPixel", 4);
 				//QUALITY_CVAR("r.RayTracing.StochasticRectLight", 1); // 1==suspicious, probably broken
 				QUALITY_CVAR_AT_LEAST("r.RayTracing.SkyLight.SamplesPerPixel", 4); // default==-1 UNPROVEN TRY ME
 			}
-
+			
 			// just not hugely tested:
-			QUALITY_CVAR("r.particlelodbias", -2);
-
+			QUALITY_CVAR("r.particlelodbias", -10);
+			
 			// unproven or possibly buggy
 			//QUALITY_CVAR("r.streaming.useallmips", 1); // removes relative prioritization spec'd by app... unproven that this is a good idea
 			//QUALITY_CVAR_AT_LEAST("r.streaming.boost", 9999); // 0 = supposedly use all available vram, but it looks like 0 = buggy
@@ -983,11 +1096,9 @@ void FNVAnselCameraPhotographyPrivate::ConfigureRenderingSettingsForPhotography(
 #undef QUALITY_CVAR_AT_LEAST
 #undef QUALITY_CVAR_AT_MOST
 #undef QUALITY_CVAR_LOWPRIORITY_AT_LEAST
-
 		UE_LOG(LogAnsel, Log, TEXT("Photography HQ mode actualized (enabled=%d)"), (int)bHighQualityModeDesired);
 		bHighQualityModeIsSetup = bHighQualityModeDesired;
 	}
-
 	if (bAnselCaptureActive)
 	{
 		// camera doesn't linger in one place very long so maximize streaming rate
@@ -995,7 +1106,6 @@ void FNVAnselCameraPhotographyPrivate::ConfigureRenderingSettingsForPhotography(
 		SetCapturedCVar("r.streaming.framesforfullupdate", 1); // recalc required LODs ASAP
 		SetCapturedCVar("r.Streaming.MaxNumTexturesToStreamPerFrame", 0); // no limit
 		SetCapturedCVar("r.streaming.numstaticcomponentsprocessedperframe", 0); // 0 = load all pending static geom now
-
 		if (bAutoPostprocess)
 		{
 			// force-disable the standard postprocessing effects which are known to
@@ -1015,10 +1125,10 @@ void FNVAnselCameraPhotographyPrivate::ConfigureRenderingSettingsForPhotography(
 			InOutPostProcessingSettings.bOverride_SceneFringeIntensity = 1;
 			InOutPostProcessingSettings.SceneFringeIntensity = 0.f;
 
-			// freeze auto-exposure adaptation
-			InOutPostProcessingSettings.bOverride_AutoExposureSpeedDown = 1;
+			// freeze auto-exposure adaptation 
+			InOutPostProcessingSettings.bOverride_AutoExposureSpeedDown = 0;
 			InOutPostProcessingSettings.AutoExposureSpeedDown = 0.f;
-			InOutPostProcessingSettings.bOverride_AutoExposureSpeedUp = 1;
+			InOutPostProcessingSettings.bOverride_AutoExposureSpeedUp = 0;
 			InOutPostProcessingSettings.AutoExposureSpeedUp = 0.f;
 
 			// bring rendering up to (at least) full resolution
@@ -1028,10 +1138,8 @@ void FNVAnselCameraPhotographyPrivate::ConfigureRenderingSettingsForPhotography(
 				InOutPostProcessingSettings.bOverride_ScreenPercentage_DEPRECATED = 1;
 				InOutPostProcessingSettings.ScreenPercentage_DEPRECATED = 100.f;
 			}
-
 			bool bAnselSuperresCaptureActive = AnselCaptureInfo.captureType == ansel::kCaptureTypeSuperResolution;
 			bool bAnselStereoCaptureActive = AnselCaptureInfo.captureType == ansel::kCaptureType360Stereo || AnselCaptureInfo.captureType == ansel::kCaptureTypeStereo;
-
 			if (bAnselStereoCaptureActive)
 			{
 				// Attempt to nerf DoF in stereoscopic shots where it can be quite unpleasant for the viewer
@@ -1046,7 +1154,6 @@ void FNVAnselCameraPhotographyPrivate::ConfigureRenderingSettingsForPhotography(
 				InOutPostProcessingSettings.bOverride_DepthOfFieldVignetteSize = 1;
 				InOutPostProcessingSettings.DepthOfFieldVignetteSize = 200.f; // Scene.h says 200.0 means 'no effect'
 			}
-
 			if (!bAnselSuperresCaptureActive)
 			{
 				// Disable SSR in multi-part shots unless taking a super-resolution shot; SSR *usually* degrades gracefully in tiled shots, and super-resolution mode in Ansel has an 'enhance' option which repairs any lingering SSR artifacts quite well.
@@ -1056,6 +1163,7 @@ void FNVAnselCameraPhotographyPrivate::ConfigureRenderingSettingsForPhotography(
 		}
 	}
 }
+
 
 void FNVAnselCameraPhotographyPrivate::SetUpSessionCVars()
 {

@@ -1,6 +1,5 @@
 {
 	"OutputFiles": [
-		"Module.Ansel.cpp.obj",
-		"Module.Ansel.gen.cpp.obj"
+		"..\\..\\..\\x64\\UnrealGame\\Shipping\\Ansel\\Module.Ansel.cpp.obj"
 	]
 }
