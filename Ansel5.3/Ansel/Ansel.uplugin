@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
 	"Version": 510,
-	"VersionName": "5.1.0.Original",
+	"VersionName": "5.3.0.Original",
 	"FriendlyName": "Nvidia Ansel Photography Plugin",
 	"Description": "Plugin to support Ansel Photography",
 	"Category": "Photography",
