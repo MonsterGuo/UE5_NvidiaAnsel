@@ -38,3 +38,7 @@
 
 ![Pasted image 20220324125255](https://user-images.githubusercontent.com/39860733/159846410-f6ff752d-283a-41c4-9fdd-45e8394a5bd6.png)  
 
+#### 增强配置器，可提供更高分辨率输出  
+![QQ截图20231016195724](https://github.com/MonsterGuo/UE5_NvidiaAnsel/assets/39860733/ba1eb235-7de5-44ab-a0a8-7ecf0be4bd28)
+
+
