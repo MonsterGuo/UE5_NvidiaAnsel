@@ -1,7 +1,0 @@
-{
-	"OutputFiles": [
-		"..\\..\\..\\x64\\UnrealGame\\Shipping\\Ansel\\Module.Ansel.cpp.obj",
-		"..\\..\\..\\x64\\UnrealGame\\Shipping\\Ansel\\Ansel.cpp.obj",
-		"..\\..\\..\\x64\\UnrealGame\\Shipping\\Ansel\\AnselFunctionLibrary.cpp.obj"
-	]
-}
