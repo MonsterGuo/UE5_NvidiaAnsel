@@ -38,3 +38,16 @@
 
 ![Pasted image 20220324125255](https://user-images.githubusercontent.com/39860733/159846410-f6ff752d-283a-41c4-9fdd-45e8394a5bd6.png)  
 
+2.确保窗口模式下为16:9的分辨率模式。  
+例如：1920*1080、2560*1440、3840*2160  
+![image](https://github.com/user-attachments/assets/3af3452e-ed2a-4a50-b83d-7fa6d5663d7b)
+
+![image](https://github.com/user-attachments/assets/a505730b-d288-44ed-a2aa-263d448ea2a9)  
+
+
+
+
+#### 增强配置器，可提供更高分辨率输出  
+![QQ截图20231016195724](https://github.com/MonsterGuo/UE5_NvidiaAnsel/assets/39860733/ba1eb235-7de5-44ab-a0a8-7ecf0be4bd28)
+
+
