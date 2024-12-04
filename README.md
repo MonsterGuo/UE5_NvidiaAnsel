@@ -51,3 +51,16 @@
 ![QQ截图20231016195724](https://github.com/MonsterGuo/UE5_NvidiaAnsel/assets/39860733/ba1eb235-7de5-44ab-a0a8-7ecf0be4bd28)
 
 
+## 5.5版本样张效果  
+![Unreal Engine 5 360 2024 12 04 - 15 19 20 36](https://github.com/user-attachments/assets/7579d6dc-3d12-4888-83ce-437970c5e051)  
+
+![Unreal Engine 5 360 2024 12 04 - 15 26 21 01](https://github.com/user-attachments/assets/d8d8504e-9be1-4fba-b71a-7e9d4b04ac5d)
+
+#### 蓝图激活方式  
+![Snipaste_2024-12-04_15-33-21](https://github.com/user-attachments/assets/b635a7c4-6b5e-4b4f-8c94-9e8826df311b)  
+
+
+
+
+
+
