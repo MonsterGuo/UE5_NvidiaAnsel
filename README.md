@@ -59,7 +59,8 @@
 #### 蓝图激活方式  
 ![Snipaste_2024-12-04_15-33-21](https://github.com/user-attachments/assets/b635a7c4-6b5e-4b4f-8c94-9e8826df311b)  
 
-
+### Nvidia App 下如何启用 Ansel:  
+![Snipaste_2024-12-08_16-14-29](https://github.com/user-attachments/assets/7ac70da0-b275-4586-ae73-d1331736f79f)  
 
 
 
