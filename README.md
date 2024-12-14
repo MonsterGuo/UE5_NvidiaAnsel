@@ -1,4 +1,4 @@
-# 目前支持 UE5.0~5.5，最新Nvida驱动  
+# 目前支持 UE5.0~5.5，最新Nvidia驱动  
 # UnrealEngine5_NvidiaAnsel
 一个基于Unreal Engine4.27 版本Nvidia Ansel移植而来的版本，提供两个版本，普通版本和自动抓取版本.
 
