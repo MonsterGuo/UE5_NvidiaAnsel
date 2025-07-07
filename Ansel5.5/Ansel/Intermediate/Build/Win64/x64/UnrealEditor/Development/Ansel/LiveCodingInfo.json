@@ -1,0 +1,12 @@
+{
+	"RemapUnityFiles": 
+	{
+		"Module.Ansel.cpp.obj": [
+			"Ansel.init.gen.cpp.obj",
+			"AnselFunctionLibrary.gen.cpp.obj",
+			"PerModuleInline.gen.cpp.obj",
+			"Ansel.cpp.obj",
+			"AnselFunctionLibrary.cpp.obj"
+		]
+	}
+}

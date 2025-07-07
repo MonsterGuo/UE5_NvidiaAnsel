@@ -1,0 +1,14 @@
+/NOLOGO
+/errorReport:prompt
+/MACHINE:x64
+/SUBSYSTEM:WINDOWS
+/DEF
+/NAME:"UnrealEditor-Ansel.dll"
+/IGNORE:4221
+/NODEFAULTLIB
+"D:\NvidiaAnsel55\Intermediate\Build\Win64\x64\NvidiaAnsel55Editor\Development\UnrealEd\SharedPCH.UnrealEd.Project.ValApi.Cpp20.h.obj"
+"D:\NvidiaAnsel55\Plugins\Ansel\Intermediate\Build\Win64\x64\UnrealEditor\Development\Ansel\Module.Ansel.cpp.obj"
+"D:\NvidiaAnsel55\Plugins\Ansel\Intermediate\Build\Win64\x64\UnrealEditor\Development\Ansel\Ansel.cpp.obj"
+"D:\NvidiaAnsel55\Plugins\Ansel\Intermediate\Build\Win64\x64\UnrealEditor\Development\Ansel\AnselFunctionLibrary.cpp.obj"
+"D:\NvidiaAnsel55\Plugins\Ansel\Intermediate\Build\Win64\x64\UnrealEditor\Development\Ansel\Default.rc2.res"
+/OUT:"D:\NvidiaAnsel55\Plugins\Ansel\Intermediate\Build\Win64\x64\UnrealEditor\Development\Ansel\UnrealEditor-Ansel.lib"
