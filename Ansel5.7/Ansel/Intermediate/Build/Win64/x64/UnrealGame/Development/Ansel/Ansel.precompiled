@@ -1,0 +1,7 @@
+{
+	"OutputFiles": [
+		"Module.Ansel.cpp.obj",
+		"Ansel.cpp.obj",
+		"AnselFunctionLibrary.cpp.obj"
+	]
+}
