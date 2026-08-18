@@ -1,0 +1,14 @@
+/NOLOGO
+/errorReport:prompt
+/MACHINE:x64
+/SUBSYSTEM:WINDOWS
+/experimental:deterministic
+/DEF
+/NAME:"UnrealEditor-Ansel.dll"
+/IGNORE:4221
+/NODEFAULTLIB
+"D:/UnrealProjects/Ansel58/Intermediate/Build/Win64/x64/Ansel58Editor/Development/UnrealEd/SharedPCH.UnrealEd.Project.ValApi.ValExpApi.Cpp20.h.obj"
+"D:/UnrealProjects/Ansel58/Plugins/Ansel/Intermediate/Build/Win64/x64/UnrealEditor/Development/Ansel/Module.Ansel.cpp.obj"
+"D:/UnrealProjects/Ansel58/Plugins/Ansel/Intermediate/Build/Win64/x64/UnrealEditor/Development/Ansel/Ansel.cpp.obj"
+"D:/UnrealProjects/Ansel58/Plugins/Ansel/Intermediate/Build/Win64/x64/UnrealEditor/Development/Ansel/AnselFunctionLibrary.cpp.obj"
+/OUT:"D:/UnrealProjects/Ansel58/Plugins/Ansel/Intermediate/Build/Win64/x64/UnrealEditor/Development/Ansel/UnrealEditor-Ansel.lib"

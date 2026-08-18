@@ -1,0 +1,19 @@
+{
+    "Version": "1.2",
+    "Data": {
+        "Source": "d:\\unrealprojects\\ansel58\\plugins\\ansel\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\ansel\\module.ansel.cpp",
+        "ProvidedModule": "",
+        "PCH": "d:\\unrealprojects\\ansel58\\intermediate\\build\\win64\\x64\\ansel58editor\\development\\unrealed\\sharedpch.unrealed.project.valapi.valexpapi.cpp20.h.pch",
+        "Includes": [
+            "d:\\unrealprojects\\ansel58\\plugins\\ansel\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\ansel\\definitions.ansel.h",
+            "d:\\unrealprojects\\ansel58\\plugins\\ansel\\intermediate\\build\\win64\\unrealeditor\\inc\\ansel\\uht\\ansel.init.gen.cpp",
+            "d:\\unrealprojects\\ansel58\\plugins\\ansel\\intermediate\\build\\win64\\unrealeditor\\inc\\ansel\\uht\\anselfunctionlibrary.gen.cpp",
+            "d:\\unrealprojects\\ansel58\\plugins\\ansel\\source\\ansel\\public\\anselfunctionlibrary.h",
+            "d:\\unrealprojects\\ansel58\\plugins\\ansel\\intermediate\\build\\win64\\unrealeditor\\inc\\ansel\\uht\\anselfunctionlibrary.generated.h",
+            "d:\\unrealprojects\\ansel58\\plugins\\ansel\\intermediate\\build\\win64\\x64\\unrealeditor\\development\\ansel\\permoduleinline.gen.cpp",
+            "c:\\program files\\epic games\\ue_5.8\\engine\\source\\runtime\\core\\public\\hal\\permoduleinline.inl"
+        ],
+        "ImportedModules": [],
+        "ImportedHeaderUnits": []
+    }
+}

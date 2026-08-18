@@ -1,0 +1,14 @@
+"D:/UnrealProjects/Ansel58/Plugins/Ansel/Intermediate/Build/Win64/x64/UnrealEditor/Development/Ansel/Module.Ansel.cpp"
+@"D:/UnrealProjects/Ansel58/Plugins/Ansel/Intermediate/Build/Win64/x64/UnrealEditor/Development/Ansel/Ansel.Shared.rsp"
+/FI"D:/UnrealProjects/Ansel58/Intermediate/Build/Win64/x64/Ansel58Editor/Development/UnrealEd/SharedPCH.UnrealEd.Project.ValApi.ValExpApi.Cpp20.h"
+/FI"D:/UnrealProjects/Ansel58/Plugins/Ansel/Intermediate/Build/Win64/x64/UnrealEditor/Development/Ansel/Definitions.Ansel.h"
+/Yu"D:/UnrealProjects/Ansel58/Intermediate/Build/Win64/x64/Ansel58Editor/Development/UnrealEd/SharedPCH.UnrealEd.Project.ValApi.ValExpApi.Cpp20.h"
+/Fp"D:/UnrealProjects/Ansel58/Intermediate/Build/Win64/x64/Ansel58Editor/Development/UnrealEd/SharedPCH.UnrealEd.Project.ValApi.ValExpApi.Cpp20.h.pch"
+/Fo"D:/UnrealProjects/Ansel58/Plugins/Ansel/Intermediate/Build/Win64/x64/UnrealEditor/Development/Ansel/Module.Ansel.cpp.obj"
+/experimental:log "D:/UnrealProjects/Ansel58/Plugins/Ansel/Intermediate/Build/Win64/x64/UnrealEditor/Development/Ansel/Module.Ansel.cpp.sarif"
+/sourceDependencies "D:/UnrealProjects/Ansel58/Plugins/Ansel/Intermediate/Build/Win64/x64/UnrealEditor/Development/Ansel/Module.Ansel.cpp.dep.json"
+/nologo
+/TP
+/GR-
+/std:c++20
+/wd5054
