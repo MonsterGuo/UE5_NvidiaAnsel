@@ -55,7 +55,7 @@ static TAutoConsoleVariable<int32> CVarPhotographyEnableMultipart(
 
 static TAutoConsoleVariable<int32> CVarPhotographySettleFrames(
 	TEXT("r.Photography.SettleFrames"),
-	10,
+	30,
 	TEXT("The number of frames to let the rendering 'settle' before taking a photo.  Useful to allow temporal AA/smoothing to work well; if not using any temporal effects, can be lowered for faster capture.  (Default: 10)"));
 
 static TAutoConsoleVariable<float> CVarPhotographyTranslationSpeed(
@@ -148,7 +148,7 @@ private:
 	static bool AnselCamerasMatch(ansel::Camera& a, ansel::Camera& b);
 
 	void AnselCameraToFMinimalView(FMinimalViewInfo& InOutPOV, ansel::Camera& AnselCam);
-	void FMinimalViewToAnselCamera(ansel::Camera& InOutAnselCam, FMinimalViewInfo& POV,float FOV);
+	void FMinimalViewToAnselCamera(ansel::Camera& InOutAnselCam, FMinimalViewInfo& POV);
 
 	bool BlueprintModifyCamera(ansel::Camera& InOutAnselCam, APlayerCameraManager* PCMgr); // returns whether modified cam is in original (session-start) position
 
@@ -171,6 +171,7 @@ private:
 
 	FMinimalViewInfo UECameraOriginal;
 	FMinimalViewInfo UECameraPrevious;
+	FRotator CameraRotation;
 
 	FPostProcessSettings UEPostProcessingOriginal;
 
@@ -344,20 +345,30 @@ bool FNVAnselCameraPhotographyPrivate::AnselCamerasMatch(ansel::Camera& a, ansel
 		a.projectionOffsetY == b.projectionOffsetY;
 }
 
+// 这里是需要更改的，因为累加的内容中有重复的方向
 void FNVAnselCameraPhotographyPrivate::AnselCameraToFMinimalView(FMinimalViewInfo& InOutPOV, ansel::Camera& AnselCam)
 {
 	InOutPOV.FOV = AnselCam.fov;
 	InOutPOV.Location.X = AnselCam.position.x;
 	InOutPOV.Location.Y = AnselCam.position.y;
 	InOutPOV.Location.Z = AnselCam.position.z;
+	// Ansel 返回的 rotation 是相对旋转（参照会话开始时的相机朝向，见 AnselSDK/ansel/Camera.h）
+	// 绝对旋转 = CameraRotation * rotq：先按 rotq 在 CameraRotation 的局部坐标系里旋转，
+	// 再由 FRotator 从组合后的四元数一次解出 Yaw/Pitch/Roll，无需再手工拆补
 	FQuat rotq(AnselCam.rotation.x, AnselCam.rotation.y, AnselCam.rotation.z, AnselCam.rotation.w);
+	if (AnselCaptureInfo.captureType == ansel::kCaptureType360Mono || AnselCaptureInfo.captureType == ansel::kCaptureType360Stereo)
+	{
+		FRotator TempRotation = FRotator(CameraRotation.Pitch, 0, CameraRotation.Roll);
+		InOutPOV.Rotation = FRotator(TempRotation.Quaternion() * rotq);
+	}
 	InOutPOV.Rotation = FRotator(rotq);
 	InOutPOV.OffCenterProjectionOffset.Set(AnselCam.projectionOffsetX, AnselCam.projectionOffsetY);
 }
 
-void FNVAnselCameraPhotographyPrivate::FMinimalViewToAnselCamera(ansel::Camera& InOutAnselCam, FMinimalViewInfo& POV,float FOV)
+// 这里是没有问题的，因为就执行了一次。
+void FNVAnselCameraPhotographyPrivate::FMinimalViewToAnselCamera(ansel::Camera& InOutAnselCam, FMinimalViewInfo& POV)
 {
-	InOutAnselCam.fov = FOV;
+	InOutAnselCam.fov = POV.FOV;
 	InOutAnselCam.position = { float(POV.Location.X), float(POV.Location.Y), float(POV.Location.Z) };
 	FQuat rotq = POV.Rotation.Quaternion();
 	InOutAnselCam.rotation = { float(rotq.X),float(rotq.Y),float(rotq.Z),float(rotq.W) };
@@ -663,8 +674,7 @@ bool FNVAnselCameraPhotographyPrivate::UpdateCamera(FMinimalViewInfo& InOutPOV, 
 			PCMgr->OnPhotographyMultiPartCaptureStart();
 			bGameCameraCutThisFrame = true;
 			bAnselCaptureNewlyActive = false;
-			
-			
+			CameraRotation = PCMgr->GetCameraRotation();
 		}
 
 		if (bAnselCaptureNewlyFinished)
@@ -734,7 +744,7 @@ bool FNVAnselCameraPhotographyPrivate::UpdateCamera(FMinimalViewInfo& InOutPOV, 
 		else
 		{
 			bCameraIsInOriginalState = false;
-
+			// 如果相机需要新的开始
 			if (bAnselSessionNewlyActive)
 			{
 				NumFramesSinceSessionStart = 0;
@@ -779,13 +789,13 @@ bool FNVAnselCameraPhotographyPrivate::UpdateCamera(FMinimalViewInfo& InOutPOV, 
 				bUIControlsNeedRebuild = true;
 
 				// store initial camera info
-				UECameraPrevious = InOutPOV;
+				// UECameraPrevious = InOutPOV;
 				UECameraOriginal = InOutPOV;
 				
-				FMinimalViewToAnselCamera(AnselCamera, InOutPOV,PCMgr->GetFOVAngle());
+				FMinimalViewToAnselCamera(AnselCamera, InOutPOV);
 				ansel::updateCamera(AnselCamera);
 
-				//AnselCameraOriginal = AnselCamera;
+				// AnselCameraOriginal = AnselCamera;
 				AnselCameraPrevious = AnselCamera;
 
 				bCameraIsInOriginalState = true;
@@ -805,7 +815,7 @@ bool FNVAnselCameraPhotographyPrivate::UpdateCamera(FMinimalViewInfo& InOutPOV, 
 
 			// ensure 2 frames have passed before pausing so that 0-timedilation can kick-in and kill the motion-blur!
 			// why 2 frames rather than 1 (or even 0)?  dunno!  probably 1 frame for the new time dilation to go into effect and 1 more frame for the motion vectors to update.
-			if (NumFramesSinceSessionStart == 2)
+			if (NumFramesSinceSessionStart == 100)
 			{
 				if (bAutoPause && !bWasPausedBeforeSession)
 				{
@@ -813,9 +823,8 @@ bool FNVAnselCameraPhotographyPrivate::UpdateCamera(FMinimalViewInfo& InOutPOV, 
 					bPausedInternally = true;
 				}
 			}
-
+			// Ansel相机到视口相机
 			AnselCameraToFMinimalView(InOutPOV, AnselCamera  );
-
 			AnselCameraPrevious = AnselCamera;
 		}
 
@@ -1210,8 +1219,6 @@ void FNVAnselCameraPhotographyPrivate::UpdatePostProcessing(FPostProcessSettings
 
 void FNVAnselCameraPhotographyPrivate::StartSession()
 {
-	
-	
 	ansel::startSession();
 	
 }
