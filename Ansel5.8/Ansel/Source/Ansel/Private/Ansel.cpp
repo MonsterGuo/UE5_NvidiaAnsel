@@ -360,8 +360,10 @@ void FNVAnselCameraPhotographyPrivate::AnselCameraToFMinimalView(FMinimalViewInf
 	{
 		FRotator TempRotation = FRotator(CameraRotation.Pitch, 0, CameraRotation.Roll);
 		InOutPOV.Rotation = FRotator(TempRotation.Quaternion() * rotq);
+	}else
+	{
+		InOutPOV.Rotation = FRotator(rotq);
 	}
-	InOutPOV.Rotation = FRotator(rotq);
 	InOutPOV.OffCenterProjectionOffset.Set(AnselCam.projectionOffsetX, AnselCam.projectionOffsetY);
 }
 
