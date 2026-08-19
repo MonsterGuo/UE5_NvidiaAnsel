@@ -1,4 +1,7 @@
 # 目前支持 UE5.0~5.8 .
+### UE5.8版本：全景支持翻转以及俯仰
+<img width="4096" height="2048" alt="Unreal Engine 5 360 2026 08 19 - 15 58 54 33" src="https://github.com/user-attachments/assets/1f0b4578-67fa-410e-8895-48bb9654d6b3" />
+
 # UnrealEngine5_NvidiaAnsel
 一个基于Unreal Engine4.27 版本Nvidia Ansel移植而来的版本，提供两个版本，普通版本和自动抓取版本.
 
